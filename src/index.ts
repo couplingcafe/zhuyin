@@ -1,95 +1,103 @@
-import { removeTone, getToneNumber, numberToMark } from 'pinyin-utils'
-import pinyinSplit from 'pinyin-split'
-import py2zy from './py2zy'
+import pinyinSplit from 'pinyin-split';
+import { getToneNumber, numberToMark, removeTone } from 'pinyin-utils';
 
-export const toneMarks = ["", "ˊ", "ˇ", "`", "˙"]
+import py2zy from './py2zy';
+
+export const toneMarks = ["", "ˊ", "ˇ", "`", "˙"];
 
 export const fromPinyinSyllable = (pinyin: string) => {
-  let zy = py2zy[removeTone(pinyin).toLowerCase()]
-  return zy + toneMarks[getToneNumber(pinyin) - 1]
-}
+  let zy = py2zy[removeTone(pinyin).toLowerCase()];
+  return zy + toneMarks[getToneNumber(pinyin) - 1];
+};
 
 export const fromPinyin = (input: string | string[], everything = false) => {
   const translate = (pinyin: string) => {
-    return pinyinSplit(pinyin, everything).map(item => {
+    return pinyinSplit(pinyin, everything).map((item) => {
       if (everything) {
-        if (typeof item === 'string') return item
-        else {
-          return fromPinyinSyllable(item[0])
+        if (typeof item === "string") {
+          const zhuyin = fromPinyinSyllable(item);
+          if (zhuyin && !zhuyin.includes("undefined")) {
+            return zhuyin;
+          }
+          return item;
+        } else {
+          return fromPinyinSyllable(item[0]);
         }
       } else {
-        return fromPinyinSyllable(item)
+        return fromPinyinSyllable(item);
       }
-    })
-  }
-  if (typeof input === 'string') return translate(input)
-  else return input.map(translate)
-}
+    });
+  };
+  if (typeof input === "string") return translate(input);
+  else return input.map(translate);
+};
 
 export const splitZhuyin = (zhuyin: string, everything = false) => {
-  const list = []
-  let index = 0
+  const list = [];
+  let index = 0;
   while (index < zhuyin.length) {
-    let count = zhuyin.length - index
-    let wordFound = false
+    let count = zhuyin.length - index;
+    let wordFound = false;
     while (count > 1) {
-      let word = zhuyin.substr(index, count)
-      if (Object.values(py2zy).includes(word)) { // word found
-        wordFound = true
+      let word = zhuyin.substr(index, count);
+      if (Object.values(py2zy).includes(word)) {
+        // word found
+        wordFound = true;
 
-        if (toneMarks.includes(zhuyin[index + count])) { // tone found after word
-          word += zhuyin[index + count]
-          count ++
+        if (toneMarks.includes(zhuyin[index + count])) {
+          // tone found after word
+          word += zhuyin[index + count];
+          count++;
         }
 
-        list.push(everything ? [word] : word)
-        index += count - 1
-        break
+        list.push(everything ? [word] : word);
+        index += count - 1;
+        break;
       }
-      count --
+      count--;
     }
 
     if (!wordFound && everything) {
-      if (index === 0 || typeof list[list.length - 1] === 'object') {
-        list.push(zhuyin[index])
-      } else if (typeof list[list.length - 1] === 'string') {
-        list[list.length - 1] += zhuyin[index]
+      if (index === 0 || typeof list[list.length - 1] === "object") {
+        list.push(zhuyin[index]);
+      } else if (typeof list[list.length - 1] === "string") {
+        list[list.length - 1] += zhuyin[index];
       }
     }
 
-    index ++
+    index++;
   }
-  return list
-}
+  return list;
+};
 
 export const toPinyinSyllable = (zhuyin: string) => {
-  let tone = toneMarks.indexOf(zhuyin[zhuyin.length - 1]) + 1
+  let tone = toneMarks.indexOf(zhuyin[zhuyin.length - 1]) + 1;
   if (tone > 0) {
-    zhuyin = zhuyin.substr(0, zhuyin.length - 1)
+    zhuyin = zhuyin.substr(0, zhuyin.length - 1);
   } else {
-    tone = 1
+    tone = 1;
   }
-  let pinyinIndex = Object.values(py2zy).indexOf(zhuyin)
+  let pinyinIndex = Object.values(py2zy).indexOf(zhuyin);
   if (pinyinIndex > -1) {
-    return Object.keys(py2zy)[pinyinIndex] + tone
+    return Object.keys(py2zy)[pinyinIndex] + tone;
   } else {
-    return zhuyin
+    return zhuyin;
   }
-}
+};
 
-type ToPinyinOptions = { everything?: boolean, numbered?: boolean }
+type ToPinyinOptions = { everything?: boolean; numbered?: boolean };
 export const toPinyin = (zhuyin: string, opts: ToPinyinOptions = {}) => {
-  let list = splitZhuyin(zhuyin, opts.everything)
-  if (!opts.everything) list = list.filter(item => typeof item === 'string')
-  list = list.map(item => {
-    if (opts.everything && typeof item === 'string') return item
-    else if (typeof item !== 'string') item = item[0]
-    const pinyin = toPinyinSyllable(item)
-    if (opts.numbered) return (opts.everything ? [pinyin] : pinyin)
-    else if (opts.everything) return [numberToMark(pinyin)]
-    else return numberToMark(pinyin)
-  })
-  return list
-}
+  let list = splitZhuyin(zhuyin, opts.everything);
+  if (!opts.everything) list = list.filter((item) => typeof item === "string");
+  list = list.map((item) => {
+    if (opts.everything && typeof item === "string") return item;
+    else if (typeof item !== "string") item = item[0];
+    const pinyin = toPinyinSyllable(item);
+    if (opts.numbered) return opts.everything ? [pinyin] : pinyin;
+    else if (opts.everything) return [numberToMark(pinyin)];
+    else return numberToMark(pinyin);
+  });
+  return list;
+};
 
-export default fromPinyin
+export default fromPinyin;
